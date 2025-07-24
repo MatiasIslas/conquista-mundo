@@ -171,12 +171,21 @@ L.geoJSON(capitals, {
 
 function startNewGame() {
   document.getElementById('main-menu').style.display = 'none';
-  console.log("Inicia nueva partida");
+  document.getElementById('new-game-setup').style.display = 'flex';
+  populateCountryList();
 }
 
+
 function continueGame() {
+  const saved = localStorage.getItem("conqorSave");
+  if (saved) {
+    const data = JSON.parse(saved);
+    console.log("Partida cargada:", data);
+    alert("Partida cargada: " + data.timestamp);
+  } else {
+    alert("No hay ninguna partida guardada.");
+  }
   document.getElementById('main-menu').style.display = 'none';
-  console.log("Continúa partida existente");
 }
 
 function openSettings() {
@@ -195,4 +204,99 @@ function toggleMainMenu() {
     menu.style.display = 'none';
   }
 }
+
+function saveGame() {
+  // Simulamos un objeto de partida (podés expandir esto con más datos reales)
+  const gameData = {
+    timestamp: new Date().toISOString(),
+    mensaje: "Esta es una partida guardada",
+    ejemplo: "Aquí podrías guardar países conquistados, dinero, etc."
+  };
+
+  localStorage.setItem("conqorSave", JSON.stringify(gameData));
+  alert("¡Partida guardada correctamente!");
+}
+
+function populateCountryList() {
+  const select = document.getElementById('country-select');
+  select.innerHTML = ''; // limpiar
+
+  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+    .then(res => res.json())
+    .then(data => {
+      data.features.forEach(f => {
+        const name = traducciones[f.properties.name] || f.properties.name;
+        const option = document.createElement('option');
+        option.value = f.properties.name;
+        option.textContent = name;
+        select.appendChild(option);
+      });
+      updateCountryFlag(); // actualizar bandera inicial
+    });
+}
+
+function updateCountryFlag() {
+  const country = document.getElementById('country-select').value;
+  const flagEl = document.getElementById('flag-preview');
+
+  // Solo para países reconocidos por código ISO (limitado)
+  const isoFlags = {
+    "Argentina": "🇦🇷",
+    "Brazil": "🇧🇷",
+    "United States": "🇺🇸",
+    "Russia": "🇷🇺",
+    "China": "🇨🇳",
+    "Japan": "🇯🇵",
+    "Germany": "🇩🇪",
+    "France": "🇫🇷",
+    "Spain": "🇪🇸",
+    "Italy": "🇮🇹",
+    "United Kingdom": "🇬🇧",
+    "Canada": "🇨🇦",
+    "Mexico": "🇲🇽",
+    "Australia": "🇦🇺",
+    "India": "🇮🇳"
+  };
+
+  flagEl.textContent = isoFlags[country] || "🏳️";
+}
+
+function confirmNewGame() {
+  const country = document.getElementById('country-select').value;
+  const color = document.getElementById('color-picker').value;
+  const profile = document.querySelector('input[name="profile"]:checked').value;
+  const name = document.getElementById('character-name').value.trim();
+  const flag = document.getElementById('flag-preview').textContent;
+
+  if (!name) {
+    alert("Por favor, escribí un nombre para tu personaje.");
+    return;
+  }
+
+  // Guardamos los datos
+  localStorage.setItem("selectedCountry", country);
+  localStorage.setItem("selectedColor", color);
+  localStorage.setItem("characterProfile", profile);
+  localStorage.setItem("characterName", name);
+  localStorage.setItem("countryFlag", flag);
+
+  // Ocultar menú
+  document.getElementById('new-game-setup').style.display = 'none';
+
+  // Mostrar en navbar
+  const navLeft = document.querySelector('#navbar .nav-left');
+  navLeft.innerHTML = `${flag} ${traducciones[country] || country} - ${profile}: ${name}`;
+
+  // Hacer zoom al país
+  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+    .then(res => res.json())
+    .then(data => {
+      const target = data.features.find(f => f.properties.name === country);
+      if (target) {
+        const bounds = L.geoJSON(target).getBounds();
+        map.flyToBounds(bounds, { duration: 1.5 });
+      }
+    });
+}
+
 
