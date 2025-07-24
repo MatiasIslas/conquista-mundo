@@ -169,13 +169,6 @@ L.geoJSON(capitals, {
   }
 }).addTo(map);
 
-function startNewGame() {
-  document.getElementById('main-menu').style.display = 'none';
-  document.getElementById('new-game-setup').style.display = 'flex';
-  populateCountryList();
-}
-
-
 function continueGame() {
   const saved = localStorage.getItem("conqorSave");
   if (saved) {
@@ -217,88 +210,6 @@ function saveGame() {
   alert("¡Partida guardada correctamente!");
 }
 
-function populateCountryList() {
-  const select = document.getElementById('country-select');
-  select.innerHTML = ''; // limpiar
-
-  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-    .then(res => res.json())
-    .then(data => {
-      data.features.forEach(f => {
-        const name = traducciones[f.properties.name] || f.properties.name;
-        const option = document.createElement('option');
-        option.value = f.properties.name;
-        option.textContent = name;
-        select.appendChild(option);
-      });
-      updateCountryFlag(); // actualizar bandera inicial
-    });
-}
-
-function updateCountryFlag() {
-  const country = document.getElementById('country-select').value;
-  const flagEl = document.getElementById('flag-preview');
-
-  // Solo para países reconocidos por código ISO (limitado)
-  const isoFlags = {
-    "Argentina": "🇦🇷",
-    "Brazil": "🇧🇷",
-    "United States": "🇺🇸",
-    "Russia": "🇷🇺",
-    "China": "🇨🇳",
-    "Japan": "🇯🇵",
-    "Germany": "🇩🇪",
-    "France": "🇫🇷",
-    "Spain": "🇪🇸",
-    "Italy": "🇮🇹",
-    "United Kingdom": "🇬🇧",
-    "Canada": "🇨🇦",
-    "Mexico": "🇲🇽",
-    "Australia": "🇦🇺",
-    "India": "🇮🇳"
-  };
-
-  flagEl.textContent = isoFlags[country] || "🏳️";
-}
-
-function confirmNewGame() {
-  const country = document.getElementById('country-select').value;
-  const color = document.getElementById('color-picker').value;
-  const profile = document.querySelector('input[name="profile"]:checked').value;
-  const name = document.getElementById('character-name').value.trim();
-  const flag = document.getElementById('flag-preview').textContent;
-
-  if (!name) {
-    alert("Por favor, escribí un nombre para tu personaje.");
-    return;
-  }
-
-  // Guardamos los datos
-  localStorage.setItem("selectedCountry", country);
-  localStorage.setItem("selectedColor", color);
-  localStorage.setItem("characterProfile", profile);
-  localStorage.setItem("characterName", name);
-  localStorage.setItem("countryFlag", flag);
-
-  // Ocultar menú
-  document.getElementById('new-game-setup').style.display = 'none';
-
-  // Mostrar en navbar
-  const navLeft = document.querySelector('#navbar .nav-left');
-  navLeft.innerHTML = `${flag} ${traducciones[country] || country} - ${profile}: ${name}`;
-
-  // Hacer zoom al país
-  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
-    .then(res => res.json())
-    .then(data => {
-      const target = data.features.find(f => f.properties.name === country);
-      if (target) {
-        const bounds = L.geoJSON(target).getBounds();
-        map.flyToBounds(bounds, { duration: 1.5 });
-      }
-    });
-}
-
 const flagEmojis = {
   "Argentina": "🇦🇷", "Brazil": "🇧🇷", "United States": "🇺🇸", "Russia": "🇷🇺",
   "China": "🇨🇳", "Japan": "🇯🇵", "Germany": "🇩🇪", "France": "🇫🇷",
@@ -317,8 +228,39 @@ let selectedCountry = null;
 let selectedColor = null;
 let selectedCurrency = null;
 
-// Mostrar el menú de selección
+// 🔄 Nuevo: Elimina todos los datos anteriores y reinicia el juego
+function resetGameData() {
+  localStorage.clear(); // Limpia todos los datos guardados
+  selectedCountry = null;
+  selectedColor = null;
+  selectedCurrency = null;
+
+  // Restablecer interfaz
+  document.getElementById('leaderName').value = '';
+  document.getElementById('countrySelect').selectedIndex = 0;
+  document.getElementById('colorPicker').value = '#ff0000';
+  document.querySelector('input[name="leader"][value="👨‍💼 Joven político"]').checked = true;
+  document.getElementById('flagEmoji').textContent = "🏳️";
+  document.getElementById('currencyName').textContent = "-";
+
+  // Restaurar barra de navegación
+  document.querySelector('.nav-left').innerHTML = "CONQOR";
+  const econ = document.querySelector('.nav-right div');
+  if (econ) econ.remove();
+
+  // Eliminar capa coloreada del mapa si existe
+  if (window.mapLayer) {
+    map.removeLayer(window.mapLayer);
+    window.mapLayer = null;
+  }
+
+  // Reiniciar el mapa a vista inicial
+  map.setView([20, 0], 3);
+}
+
+// 🔄 Modificado: se llama antes de abrir el setup para empezar nuevo juego
 function startNewGame() {
+  resetGameData(); // 🔥 Limpia datos primero
   document.getElementById('main-menu').style.display = 'none';
   document.getElementById('setup-menu').style.display = 'block';
 
@@ -332,7 +274,7 @@ function startNewGame() {
     select.appendChild(option);
   });
 
-  updateFlagAndCurrency();
+  updateFlagAndCurrency(); // Actualiza bandera y moneda
 }
 
 // Actualiza bandera y moneda
@@ -401,4 +343,3 @@ function confirmSetup() {
       }
     });
 }
-
