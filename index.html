@@ -12,8 +12,9 @@
   <nav id="navbar">
   <div class="nav-left">CONQOR</div>
   <div class="nav-right">
-    <button onclick="toggleMainMenu()">Menú principal</button>
-  </div>
+  <button onclick="saveGame()" title="Guardar partida 💾">💾</button>
+  <button onclick="toggleMainMenu()">Menú principal</button>
+</div>
 </nav>
   
   <div id="map"></div>
@@ -27,6 +28,32 @@
     <button class="menu-btn" onclick="showCredits()">Créditos</button>
   </div>
 </div>
+  
+  <div id="new-game-setup" style="display: none;">
+  <div class="setup-container">
+    <h2>Elegí tu país y personaje</h2>
+
+    <label for="country-select">País a gobernar:</label>
+    <select id="country-select" onchange="updateCountryFlag()"></select>
+    <span id="flag-preview" style="font-size: 24px; margin-left: 10px;"></span>
+
+    <label for="color-picker">Color del país:</label>
+    <input type="color" id="color-picker" value="#ff0000"/>
+
+    <label>Perfil del personaje:</label>
+    <div class="profile-options">
+      <label><input type="radio" name="profile" value="Joven político" checked /> 🧑‍💼 Joven político</label>
+      <label><input type="radio" name="profile" value="Militar anciano" /> 👴 Militar anciano</label>
+      <label><input type="radio" name="profile" value="Mujer mayor" /> 👵 Mujer mayor</label>
+    </div>
+
+    <label for="character-name">Nombre del personaje:</label>
+    <input type="text" id="character-name" placeholder="Escribí un nombre..." />
+
+    <button onclick="confirmNewGame()">Listo</button>
+  </div>
+</div>
+
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
