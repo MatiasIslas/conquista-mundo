@@ -168,3 +168,21 @@ L.geoJSON(capitals, {
     }
   }
 }).addTo(map);
+
+function startNewGame() {
+  document.getElementById('main-menu').style.display = 'none';
+  console.log("Inicia nueva partida");
+}
+
+function continueGame() {
+  document.getElementById('main-menu').style.display = 'none';
+  console.log("Continúa partida existente");
+}
+
+function openSettings() {
+  alert("Ajustes aún no disponibles.");
+}
+
+function showCredits() {
+  alert("Conqor - Desarrollado por Matías Islas");
+}
