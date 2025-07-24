@@ -29,30 +29,40 @@
   </div>
 </div>
   
-  <div id="new-game-setup" style="display: none;">
-  <div class="setup-container">
-    <h2>Elegí tu país y personaje</h2>
+  <!-- Menú de selección de país y personaje -->
+<div id="setup-menu" class="menu-container" style="display: none;">
+  <h2 class="menu-title">🌍 Elige tu nación</h2>
+  
+  <label>País:
+    <select id="countrySelect" onchange="updateFlagAndCurrency()"></select>
+    <span id="flagEmoji">🏳️</span>
+  </label>
+  
+  <br><br>
 
-    <label for="country-select">País a gobernar:</label>
-    <select id="country-select" onchange="updateCountryFlag()"></select>
-    <span id="flag-preview" style="font-size: 24px; margin-left: 10px;"></span>
+  <label>Color:
+    <input type="color" id="colorPicker" value="#ff0000">
+  </label>
 
-    <label for="color-picker">Color del país:</label>
-    <input type="color" id="color-picker" value="#ff0000"/>
+  <br><br>
 
-    <label>Perfil del personaje:</label>
-    <div class="profile-options">
-      <label><input type="radio" name="profile" value="Joven político" checked /> 🧑‍💼 Joven político</label>
-      <label><input type="radio" name="profile" value="Militar anciano" /> 👴 Militar anciano</label>
-      <label><input type="radio" name="profile" value="Mujer mayor" /> 👵 Mujer mayor</label>
-    </div>
+  <label>Perfil del líder:</label><br>
+  <input type="radio" name="leader" value="👨‍💼 Joven político" checked> 👨‍💼 Joven político<br>
+  <input type="radio" name="leader" value="🪖 Militar anciano"> 🪖 Militar anciano<br>
+  <input type="radio" name="leader" value="👵 Mujer mayor"> 👵 Mujer mayor<br>
 
-    <label for="character-name">Nombre del personaje:</label>
-    <input type="text" id="character-name" placeholder="Escribí un nombre..." />
+  <br>
+  <label>Nombre del personaje:</label><br>
+  <input type="text" id="leaderName" placeholder="Ej: Alejandro Rivas" style="width: 100%; padding: 8px; border-radius: 6px; border: none;">
 
-    <button onclick="confirmNewGame()">Listo</button>
-  </div>
+  <br><br>
+
+  <div><strong>💰 Moneda:</strong> <span id="currencyName">-</span></div>
+
+  <br>
+  <button class="menu-btn" onclick="confirmSetup()">✅ Listo</button>
 </div>
+
 
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
