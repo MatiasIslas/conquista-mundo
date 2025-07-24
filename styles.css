@@ -192,7 +192,7 @@ html, body, #map {
 }
 
 .capital-icon {
-  font-size: 20px;
+  font-size: 60px;
   text-shadow: 0 0 2px white;
   pointer-events: none;
 }
