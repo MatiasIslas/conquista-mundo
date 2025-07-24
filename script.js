@@ -3,7 +3,7 @@ const map = L.map('map', {
   zoom: 3,
   minZoom: 2.5,
   maxZoom: 9,
-  zoomControl: true,
+  zoomControl: false,
   attributionControl: false
 });
 
@@ -299,4 +299,106 @@ function confirmNewGame() {
     });
 }
 
+const flagEmojis = {
+  "Argentina": "🇦🇷", "Brazil": "🇧🇷", "United States": "🇺🇸", "Russia": "🇷🇺",
+  "China": "🇨🇳", "Japan": "🇯🇵", "Germany": "🇩🇪", "France": "🇫🇷",
+  "Spain": "🇪🇸", "Italy": "🇮🇹", "United Kingdom": "🇬🇧", "Canada": "🇨🇦",
+  "Mexico": "🇲🇽", "Australia": "🇦🇺", "India": "🇮🇳"
+};
+
+const currencies = {
+  "Argentina": "Peso argentino", "Brazil": "Real", "United States": "Dólar",
+  "Russia": "Rublo", "China": "Yuan", "Japan": "Yen", "Germany": "Euro",
+  "France": "Euro", "Spain": "Euro", "Italy": "Euro", "United Kingdom": "Libra esterlina",
+  "Canada": "Dólar canadiense", "Mexico": "Peso mexicano", "Australia": "Dólar australiano", "India": "Rupia"
+};
+
+let selectedCountry = null;
+let selectedColor = null;
+let selectedCurrency = null;
+
+// Mostrar el menú de selección
+function startNewGame() {
+  document.getElementById('main-menu').style.display = 'none';
+  document.getElementById('setup-menu').style.display = 'block';
+
+  // Llenar select con países
+  const select = document.getElementById('countrySelect');
+  select.innerHTML = '';
+  Object.keys(traducciones).forEach(pais => {
+    const option = document.createElement('option');
+    option.value = pais;
+    option.textContent = traducciones[pais];
+    select.appendChild(option);
+  });
+
+  updateFlagAndCurrency();
+}
+
+// Actualiza bandera y moneda
+function updateFlagAndCurrency() {
+  const country = document.getElementById('countrySelect').value;
+  selectedCountry = country;
+  selectedCurrency = currencies[country] || "Moneda desconocida";
+
+  document.getElementById('flagEmoji').textContent = flagEmojis[country] || "🏳️";
+  document.getElementById('currencyName').textContent = selectedCurrency;
+}
+
+// Confirmar configuración e iniciar el juego
+function confirmSetup() {
+  selectedColor = document.getElementById('colorPicker').value;
+  const leader = document.querySelector('input[name="leader"]:checked').value;
+  const name = document.getElementById('leaderName').value || "Sin nombre";
+
+  // Mostrar en navbar
+  document.querySelector('.nav-left').innerHTML = `
+    ${flagEmojis[selectedCountry] || "🏳️"} ${traducciones[selectedCountry]} — ${leader} <strong>${name}</strong>
+  `;
+
+  // Mostrar economía
+  document.querySelector('.nav-right').insertAdjacentHTML("afterbegin", `
+    <div style="margin-right: 10px; font-weight: bold;">💰 Economía: 100 ${selectedCurrency}</div>
+  `);
+
+  document.getElementById('setup-menu').style.display = 'none';
+
+  // Colorear el país elegido
+  if (window.mapLayer) {
+    window.map.removeLayer(window.mapLayer);
+  }
+
+  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+    .then(res => res.json())
+    .then(data => {
+      const countries = data.features;
+
+      window.mapLayer = L.geoJSON(countries, {
+        style: feature => {
+          if (feature.properties.name === selectedCountry) {
+            return {
+              color: selectedColor,
+              weight: 1,
+              fillColor: selectedColor,
+              fillOpacity: 0.8
+            };
+          } else {
+            return {
+              color: "#ccc",
+              weight: 0.5,
+              fillColor: "#ccc",
+              fillOpacity: 0.3
+            };
+          }
+        }
+      }).addTo(map);
+
+      // Zoom al país seleccionado
+      const selectedFeature = countries.find(f => f.properties.name === selectedCountry);
+      if (selectedFeature) {
+        const bounds = L.geoJSON(selectedFeature).getBounds();
+        map.flyToBounds(bounds, { duration: 2 });
+      }
+    });
+}
 
