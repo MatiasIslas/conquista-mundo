@@ -186,3 +186,13 @@ function openSettings() {
 function showCredits() {
   alert("Conqor - Desarrollado por Matías Islas");
 }
+
+function toggleMainMenu() {
+  const menu = document.getElementById('main-menu');
+  if (menu.style.display === 'none' || menu.style.display === '') {
+    menu.style.display = 'flex';
+  } else {
+    menu.style.display = 'none';
+  }
+}
+
