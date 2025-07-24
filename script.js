@@ -1,3 +1,4 @@
+// 🌍 INICIALIZAR MAPA
 const map = L.map('map', {
   center: [20, 0],
   zoom: 3,
@@ -7,32 +8,17 @@ const map = L.map('map', {
   attributionControl: false
 });
 
-// Paleta de colores
-const palette = [
-  "#e6194b", "#3cb44b", "#ffe119", "#4363d8",
-  "#f58231", "#911eb4", "#46f0f0", "#f032e6"
-];
+// 🎨 PALETA DE COLORES
+const palette = ["#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#911eb4", "#46f0f0", "#f032e6"];
 
-// Traducciones de países
+// 📚 DATOS DE PAÍSES (sólo para traducciones visuales)
 const traducciones = {
-  "Argentina": "Argentina",
-  "Brazil": "Brasil",
-  "United States": "Estados Unidos",
-  "Russia": "Rusia",
-  "China": "China",
-  "Japan": "Japón",
-  "Germany": "Alemania",
-  "France": "Francia",
-  "Spain": "España",
-  "Italy": "Italia",
-  "United Kingdom": "Reino Unido",
-  "Canada": "Canadá",
-  "Mexico": "México",
-  "Australia": "Australia",
-  "India": "India"
+  "Argentina": "Argentina", "Brazil": "Brasil", "United States": "Estados Unidos", "Russia": "Rusia",
+  "China": "China", "Japan": "Japón", "Germany": "Alemania", "France": "Francia", "Spain": "España",
+  "Italy": "Italia", "United Kingdom": "Reino Unido", "Canada": "Canadá", "Mexico": "México",
+  "Australia": "Australia", "India": "India"
 };
 
-// Banderas
 const flagEmojis = {
   "Argentina": "🇦🇷", "Brazil": "🇧🇷", "United States": "🇺🇸", "Russia": "🇷🇺",
   "China": "🇨🇳", "Japan": "🇯🇵", "Germany": "🇩🇪", "France": "🇫🇷",
@@ -40,7 +26,6 @@ const flagEmojis = {
   "Mexico": "🇲🇽", "Australia": "🇦🇺", "India": "🇮🇳"
 };
 
-// Monedas
 const currencies = {
   "Argentina": "Peso argentino", "Brazil": "Real", "United States": "Dólar",
   "Russia": "Rublo", "China": "Yuan", "Japan": "Yen", "Germany": "Euro",
@@ -48,69 +33,87 @@ const currencies = {
   "Canada": "Dólar canadiense", "Mexico": "Peso mexicano", "Australia": "Dólar australiano", "India": "Rupia"
 };
 
-let selectedCountry = null;
-let selectedColor = null;
-let selectedCurrency = null;
+let selectedCountry = null, selectedColor = null, selectedCurrency = null;
 
-// --- MAPA: Países y vecinos ---
+// 🧠 FUNCIÓN PARA ENCONTRAR VECINOS
 function getNeighbors(features) {
   const neighbors = {};
   features.forEach((a, i) => {
-    const aName = a.properties.name;
-    neighbors[aName] = new Set();
+    neighbors[a.properties.name] = new Set();
     features.forEach((b, j) => {
-      if (i === j) return;
-      if (turf.booleanIntersects(a, b)) {
-        neighbors[aName].add(b.properties.name);
+      if (i !== j && turf.booleanIntersects(a, b)) {
+        neighbors[a.properties.name].add(b.properties.name);
       }
     });
   });
   return neighbors;
 }
 
+// Variable global para guardar países al cargar
+let allCountries = [];
+
+// 🌍 CARGAR MAPA Y COLOREAR PAÍSES
 fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
   .then(res => res.json())
   .then(data => {
     const countries = data.features;
+    allCountries = countries; // guardamos para luego usar
+
     const neighbors = getNeighbors(countries);
     const countryColors = {};
 
-    countries.forEach(country => {
-      const name = country.properties.name;
+    countries.forEach(c => {
       const usedColors = new Set();
-      if (neighbors[name]) {
-        neighbors[name].forEach(n => {
-          if (countryColors[n]) usedColors.add(countryColors[n]);
-        });
-      }
+      neighbors[c.properties.name]?.forEach(n => {
+        if (countryColors[n]) usedColors.add(countryColors[n]);
+      });
       for (const color of palette) {
         if (!usedColors.has(color)) {
-          countryColors[name] = color;
+          countryColors[c.properties.name] = color;
           break;
         }
       }
     });
 
     L.geoJSON(countries, {
-      style: feature => {
-        const color = countryColors[feature.properties.name] || "#ccc";
-        return { color, fillColor: color, weight: 0.8, fillOpacity: 0.8 };
+      style: f => {
+        const clr = countryColors[f.properties.name] || "#ccc";
+        return { color: clr, fillColor: clr, weight: 0.8, fillOpacity: 0.8 };
       },
-      onEachFeature: (feature, layer) => {
-        const name = traducciones[feature.properties.name] || feature.properties.name;
-        const center = layer.getBounds().getCenter();
+      onEachFeature: (f, l) => {
+        const nombre = traducciones[f.properties.name] || f.properties.name;
+        const center = l.getBounds().getCenter();
         L.marker(center, {
           icon: L.divIcon({
             className: 'country-label',
-            html: `<span>${name}</span>`,
+            html: `<span>${nombre}</span>`,
             iconSize: [100, 20]
           })
         }).addTo(map);
       }
     }).addTo(map);
+
+    // ** Aquí llenamos el select usando los nombres reales **
+    populateCountrySelect(countries);
   });
 
-// Océanos
+// Función para llenar select con nombres reales, y mostrar traducciones en texto
+function populateCountrySelect(countries) {
+  const select = document.getElementById('countrySelect');
+  select.innerHTML = '<option disabled selected>Selecciona un país</option>';
+  countries.forEach(country => {
+    const nameReal = country.properties.name;
+    const nombreMostrar = traducciones[nameReal] || nameReal;
+    const option = document.createElement('option');
+    option.value = nameReal;        // valor EXACTO del GeoJSON
+    option.textContent = nombreMostrar;  // nombre traducido para mostrar
+    select.appendChild(option);
+  });
+
+  updateFlagAndCurrency();
+}
+
+// 🌊 OCÉANOS
 [
   { nombre: "Océano Atlántico", coords: [0, -30] },
   { nombre: "Océano Pacífico", coords: [0, -150] },
@@ -127,8 +130,8 @@ fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.g
   }).addTo(map);
 });
 
-// Capitales
-const capitals = {
+// 🏛️ CAPITALES
+L.geoJSON({
   "type": "FeatureCollection",
   "features": [
     {"type":"Feature","properties":{"capital":"Buenos Aires"},"geometry":{"type":"Point","coordinates":[-58.4173,-34.6118]}},
@@ -138,39 +141,21 @@ const capitals = {
     {"type":"Feature","properties":{"capital":"París"},"geometry":{"type":"Point","coordinates":[2.3522,48.8566]}},
     {"type":"Feature","properties":{"capital":"Londres"},"geometry":{"type":"Point","coordinates":[-0.1276,51.5074]}}
   ]
-};
-
-L.geoJSON(capitals, {
-  pointToLayer: (feature, latlng) => {
-    return L.circleMarker(latlng, {
-      radius: 5,
-      fillColor: "#d50000",
-      color: "#fff",
-      weight: 1,
-      fillOpacity: 0.9
-    });
-  },
-  onEachFeature: (feature, layer) => {
-    if (feature.properties && feature.properties.capital) {
-      layer.bindTooltip(feature.properties.capital, {
-        permanent: false,
-        direction: 'top',
-        offset: [0, -5]
-      });
+}, {
+  pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+    radius: 5, fillColor: "#d50000", color: "#fff", weight: 1, fillOpacity: 0.9
+  }),
+  onEachFeature: (f, l) => {
+    if (f.properties.capital) {
+      l.bindTooltip(f.properties.capital, { permanent: false, direction: 'top', offset: [0, -5] });
     }
   }
 }).addTo(map);
 
-// Interfaz y lógica de juego
-
+// 📦 SISTEMA DE GUARDADO Y MENÚ
 function continueGame() {
   const saved = localStorage.getItem("conqorSave");
-  if (saved) {
-    const data = JSON.parse(saved);
-    alert("Partida cargada: " + data.timestamp);
-  } else {
-    alert("No hay ninguna partida guardada.");
-  }
+  alert(saved ? "Partida cargada: " + JSON.parse(saved).timestamp : "No hay ninguna partida guardada.");
   document.getElementById('main-menu').style.display = 'none';
 }
 
@@ -179,7 +164,7 @@ function openSettings() {
 }
 
 function showCredits() {
-  alert("Conqor - Desarrollado por Matías Islas");
+  alert("Conqor — Desarrollado por Matías Islas");
 }
 
 function toggleMainMenu() {
@@ -188,20 +173,17 @@ function toggleMainMenu() {
 }
 
 function saveGame() {
-  const gameData = {
+  localStorage.setItem("conqorSave", JSON.stringify({
     timestamp: new Date().toISOString(),
-    mensaje: "Esta es una partida guardada"
-  };
-  localStorage.setItem("conqorSave", JSON.stringify(gameData));
+    mensaje: "Partida guardada"
+  }));
   alert("¡Partida guardada correctamente!");
 }
 
-// 🔄 RESET GENERAL
+// 🔄 RESET Y NUEVO JUEGO
 function resetGameData() {
   localStorage.clear();
-  selectedCountry = null;
-  selectedColor = null;
-  selectedCurrency = null;
+  selectedCountry = selectedColor = selectedCurrency = null;
 
   document.getElementById('leaderName').value = '';
   document.getElementById('countrySelect').selectedIndex = 0;
@@ -222,25 +204,18 @@ function resetGameData() {
   map.setView([20, 0], 3);
 }
 
-// 🔁 NUEVO JUEGO
 function startNewGame() {
   resetGameData();
   document.getElementById('main-menu').style.display = 'none';
   document.getElementById('setup-menu').style.display = 'block';
 
-  const select = document.getElementById('countrySelect');
-  select.innerHTML = '<option disabled selected>Selecciona un país</option>';
-  Object.keys(traducciones).forEach(pais => {
-    const option = document.createElement('option');
-    option.value = pais;
-    option.textContent = traducciones[pais];
-    select.appendChild(option);
-  });
-
-  updateFlagAndCurrency();
+  // No llenamos aquí el select porque ya se llena cuando se carga el GeoJSON
+  // pero por si acaso forzamos actualización
+  if (allCountries.length) {
+    populateCountrySelect(allCountries);
+  }
 }
 
-// Actualiza bandera y moneda
 function updateFlagAndCurrency() {
   const country = document.getElementById('countrySelect').value;
   selectedCountry = country;
@@ -250,14 +225,13 @@ function updateFlagAndCurrency() {
   document.getElementById('currencyName').textContent = selectedCurrency;
 }
 
-// Confirmar inicio
 function confirmSetup() {
   selectedColor = document.getElementById('colorPicker').value;
   const leader = document.querySelector('input[name="leader"]:checked').value;
   const name = document.getElementById('leaderName').value || "Sin nombre";
 
   document.querySelector('.nav-left').innerHTML = `
-    ${flagEmojis[selectedCountry] || "🏳️"} ${traducciones[selectedCountry]} — ${leader} <strong>${name}</strong>
+    ${flagEmojis[selectedCountry] || "🏳️"} ${traducciones[selectedCountry] || selectedCountry} — ${leader} <strong>${name}</strong>
   `;
 
   document.querySelector('.nav-right').insertAdjacentHTML("afterbegin", `
@@ -266,27 +240,21 @@ function confirmSetup() {
 
   document.getElementById('setup-menu').style.display = 'none';
 
-  if (window.mapLayer) {
-    map.removeLayer(window.mapLayer);
-  }
+  if (window.mapLayer) map.removeLayer(window.mapLayer);
 
   fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
     .then(res => res.json())
     .then(data => {
       const countries = data.features;
       window.mapLayer = L.geoJSON(countries, {
-        style: feature => {
-          return (feature.properties.name === selectedCountry) ? {
-            color: selectedColor, fillColor: selectedColor, weight: 1, fillOpacity: 0.8
-          } : {
-            color: "#ccc", fillColor: "#ccc", weight: 0.5, fillOpacity: 0.3
-          };
-        }
+        style: f => f.properties.name === selectedCountry
+          ? { color: selectedColor, fillColor: selectedColor, weight: 1, fillOpacity: 0.8 }
+          : { color: "#ccc", fillColor: "#ccc", weight: 0.5, fillOpacity: 0.3 }
       }).addTo(map);
 
-      const selectedFeature = countries.find(f => f.properties.name === selectedCountry);
-      if (selectedFeature) {
-        const bounds = L.geoJSON(selectedFeature).getBounds();
+      const selFeat = countries.find(f => f.properties.name === selectedCountry);
+      if (selFeat) {
+        const bounds = L.geoJSON(selFeat).getBounds();
         map.flyToBounds(bounds, { duration: 2 });
       }
     });
