@@ -155,16 +155,55 @@ L.geoJSON({
 // 📦 SISTEMA DE GUARDADO Y MENÚ
 function continueGame() {
   const saved = localStorage.getItem("conqorSave");
-  alert(saved ? "Partida cargada: " + JSON.parse(saved).timestamp : "No hay ninguna partida guardada.");
+  if (!saved) {
+    alert("No hay ninguna partida guardada.");
+    return;
+  }
+
+  const game = JSON.parse(saved);
+  selectedCountry = game.country;
+  selectedColor = game.color;
+  selectedCurrency = game.currency;
+
+  // Restaurar menú superior
+  document.querySelector('.nav-left').innerHTML = `
+    ${flagEmojis[selectedCountry] || "🏳️"} ${traducciones[selectedCountry] || selectedCountry} — ${game.leaderType} <strong>${game.leaderName}</strong>
+  `;
+
+  document.querySelector('.nav-right').insertAdjacentHTML("afterbegin", `
+    <div style="margin-right: 10px; font-weight: bold;">💰 Economía: ${game.economy} ${game.currency}</div>
+  `);
+
   document.getElementById('main-menu').style.display = 'none';
+
+  // Pintar el mapa de nuevo
+  if (window.mapLayer) map.removeLayer(window.mapLayer);
+
+  fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+    .then(res => res.json())
+    .then(data => {
+      const countries = data.features;
+      window.mapLayer = L.geoJSON(countries, {
+        style: f => f.properties.name === selectedCountry
+          ? { color: selectedColor, fillColor: selectedColor, weight: 1, fillOpacity: 0.8 }
+          : { color: "#ccc", fillColor: "#ccc", weight: 0.5, fillOpacity: 0.3 }
+      }).addTo(map);
+
+      const selFeat = countries.find(f => f.properties.name === selectedCountry);
+      if (selFeat) {
+        const bounds = L.geoJSON(selFeat).getBounds();
+        map.flyToBounds(bounds, { duration: 2 });
+      }
+    });
 }
+
 
 function openSettings() {
   alert("Ajustes aún no disponibles.");
 }
 
 function showCredits() {
-  alert("Conqor — Desarrollado por Matías Islas");
+  alert("Conqor — Desarrollado por Axlan Studios");
 }
 
 function toggleMainMenu() {
@@ -173,12 +212,31 @@ function toggleMainMenu() {
 }
 
 function saveGame() {
-  localStorage.setItem("conqorSave", JSON.stringify({
+  const leaderName = document.getElementById('leaderName').value || "Sin nombre";
+  const leaderType = document.querySelector('input[name="leader"]:checked')?.value || "👨‍💼 Joven político";
+  const color = document.getElementById('colorPicker').value || "#ff0000";
+  const country = selectedCountry;
+  const currency = selectedCurrency;
+
+  if (!country) {
+    alert("Primero debes iniciar una partida para poder guardarla.");
+    return;
+  }
+
+  const gameState = {
     timestamp: new Date().toISOString(),
-    mensaje: "Partida guardada"
-  }));
+    country,
+    color,
+    currency,
+    leaderName,
+    leaderType,
+    economy: 100 // Puedes hacerlo dinámico si tienes lógica para modificar economía
+  };
+
+  localStorage.setItem("conqorSave", JSON.stringify(gameState));
   alert("¡Partida guardada correctamente!");
 }
+
 
 // 🔄 RESET Y NUEVO JUEGO
 function resetGameData() {
