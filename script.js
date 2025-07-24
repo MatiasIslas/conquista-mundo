@@ -3,7 +3,7 @@ const map = L.map('map', {
   zoom: 3,
   minZoom: 2.5,
   maxZoom: 9,
-  zoomControl: false,
+  zoomControl: true,
   attributionControl: false
 });
 
